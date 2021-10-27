@@ -1,2 +1,2 @@
 # GoTraining 05 Homework
-# week02
+# [week02](/homework/week02)
