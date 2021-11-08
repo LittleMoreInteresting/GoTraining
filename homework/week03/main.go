@@ -10,6 +10,7 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 )
 
 /**
@@ -17,32 +18,37 @@ import (
 */
 const addr = ":8808"
 
+func httpServerStart(ctx context.Context, eg *errgroup.Group, svr *http.Server) {
+	eg.Go(func() error {
+		<-ctx.Done()
+		shutdownCtx, _ := context.WithTimeout(context.Background(), 5*time.Second)
+		fmt.Println("Done received", svr.Addr)
+		err := svr.Shutdown(shutdownCtx)
+		fmt.Println("Shutdown success", svr.Addr)
+		return err
+	})
+	eg.Go(func() error {
+		fmt.Println("ListenAndServe", svr.Addr)
+		return svr.ListenAndServe()
+	})
+}
+
 func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	group, errCtx := errgroup.WithContext(ctx)
 
-	group.Go(func() error {
-		srv := &http.Server{Addr: addr}
-		fmt.Println("[G01]:start...")
-		http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-			_, _ = io.WriteString(w, "Go01: Hello world\n")
-		})
-		http.HandleFunc("/shutdown", func(w http.ResponseWriter, r *http.Request) {
-			_ = srv.Shutdown(context.Background())
-		})
-		go func() {
-			if err := srv.ListenAndServe(); err != nil {
-				fmt.Printf("[G01]异常:%v...\n", err)
-				cancel()
-				return
-			}
-		}()
-		select {
-		case <-errCtx.Done():
-			fmt.Println("[G01]: 退出...")
-			return errCtx.Err()
-		}
+	svr1 := &http.Server{
+		Addr: "127.0.0.1:8080",
+	}
+	svr2 := &http.Server{
+		Addr: "127.0.0.1:8081",
+	}
+	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		_, _ = io.WriteString(w, "Go01: Hello world\n")
 	})
+	httpServerStart(ctx, group, svr1)
+	httpServerStart(ctx, group, svr2)
+
 	group.Go(func() error {
 
 		c := make(chan os.Signal, 1)
