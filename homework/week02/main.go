@@ -2,6 +2,7 @@ package main
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 
 	_ "github.com/go-sql-driver/mysql"
@@ -12,6 +13,8 @@ type User struct {
 	Name string
 	Age  int
 }
+
+var ErrUserNotFound = errors.New("User: user not found")
 
 func connect() (*sql.DB, error) {
 	user := "root"
@@ -30,7 +33,7 @@ func QueryUser(user *User, id int) error {
 	querysql := "select id,name,age from users where id = ?;"
 	err = db.QueryRow(querysql, id).Scan(&user.Id, &user.Name, &user.Age)
 	if err == sql.ErrNoRows {
-		return nil
+		return ErrUserNotFound
 	}
 	return err
 }
@@ -42,13 +45,13 @@ func main() {
 	// Answer:  dao 层遇到 sql.ErrNoRows 应该在dao层处理这个错误，不抛给上层，
 	// 业务层可以根据查询结课判断是否存在数据。也可以区分数据库层面的错误和业务数据的异常
 	user := &User{}
-	err := QueryUser(user, 1)
+	err := QueryUser(user, 2)
 	if err != nil {
+		if errors.Is(err, ErrUserNotFound) {
+			fmt.Printf("用户未找到:%v\n", err)
+			return
+		}
 		fmt.Printf("Err:%v\n", err)
-		return
-	}
-	if user.Id > 0 {
-		fmt.Printf("User:%v\n", user)
 		return
 	}
 	fmt.Printf("User Not Found\n")
