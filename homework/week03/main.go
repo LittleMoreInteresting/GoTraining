@@ -46,8 +46,8 @@ func main() {
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		_, _ = io.WriteString(w, "Go01: Hello world\n")
 	})
-	httpServerStart(ctx, group, svr1)
-	httpServerStart(ctx, group, svr2)
+	httpServerStart(errCtx, group, svr1)
+	httpServerStart(errCtx, group, svr2)
 
 	group.Go(func() error {
 
