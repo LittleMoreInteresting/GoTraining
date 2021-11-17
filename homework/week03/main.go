@@ -16,7 +16,6 @@ import (
 /**
 1. 基于 errgroup 实现一个 http server 的启动和关闭 ，以及 linux signal 信号的注册和处理，要保证能够一个退出，全部注销退出。
 */
-const addr = ":8808"
 
 func httpServerStart(ctx context.Context, eg *errgroup.Group, svr *http.Server) {
 	eg.Go(func() error {
@@ -34,7 +33,7 @@ func httpServerStart(ctx context.Context, eg *errgroup.Group, svr *http.Server) 
 }
 
 func main() {
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx := context.Background()
 	group, errCtx := errgroup.WithContext(ctx)
 
 	svr1 := &http.Server{
@@ -60,7 +59,6 @@ func main() {
 			return errCtx.Err()
 		case s := <-c:
 			fmt.Printf("[G02]退出%v...\n", s)
-			cancel()
 			return errors.New("[G02] :退出")
 		}
 	})
